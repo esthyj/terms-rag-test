@@ -1,4 +1,6 @@
-# RAG Evaluation Dashboard
+# 📄 RAG Evaluation Dashboard
+
+![RAG Evaluation Dashboard](data/image/image_rag_test.png)
 
 보험 약관 QA 데이터셋을 기반으로 RAG 시스템 성능을 평가하는 웹 대시보드입니다.  
 Claude API(LLM-as-a-judge)를 활용하여 **Reference Recall**, **Answer Correctness**, **Faithfulness** 를 자동 평가하고 개선 의견을 생성합니다.
@@ -27,7 +29,7 @@ terms-rag-test/
 └── requirements.txt
 ```
 
-> **생성 파일** (`data/output/` — 자동 생성, git 미추적)  
+> **생성 파일** (`data/output/` — 자동 생성)  
 > `all_policies_eval_result.jsonl` · `all_policies_advice.json` · `rag_eval_report_*.html`
 
 ## 시작하기
@@ -35,12 +37,12 @@ terms-rag-test/
 ### 1. 요구사항
 
 - Python 3.10 이상
-- [Anthropic API 키](https://console.anthropic.com/)
+- Anthropic API 키
 
 ### 2. 설치
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/esthyj/terms-rag-test.git
 cd terms-rag-test
 
 pip install -r requirements.txt
@@ -69,10 +71,10 @@ ANTHROPIC_API_KEY=sk-ant-...
 | `question` | str | 제공 | 질문 텍스트 |
 | `answer` | str | 제공 | 정답(ground truth) 답변 |
 | `reference` | list[str] | 제공 | 정답 참조 조항 (예: `["제17조"]`) |
-| `type` | str | 제공 | 질문 유형 |
+| `type` | str | 제공 | 질문 유형 (예: `보상 가능 여부 문의`) |
 | `la` | str | 제공 | 상품 코드 (예: `LA00377001`) |
 | `cla` | str | 제공 | 약관 코드 (예: `CLA05390`) |
-| `rag_answer` | str | **사용자 입력** | 본인의 RAG 시스템이 생성한 답변 |
+| `rag_answer` | str | **사용자 입력** | RAG 시스템이 생성한 답변 |
 | `rag_reference` | list[str] | **사용자 입력 (선택)** | RAG 시스템이 반환한 참조 조항 — 제공 시 Recall 지표 활성화 |
 
 > `rag_answer` 열이 없으면 서버 시작 시 빈 문자열로 자동 추가됩니다.  
@@ -94,9 +96,15 @@ python src/server.py
 ### 6. 평가 실행
 
 1. 대시보드 상단의 **평가 실행** 버튼을 클릭합니다.
+
+   ![평가 실행](data/image/image_run_test.png)
+
 2. 진행 상황이 실시간으로 표시됩니다.
-3. 완료 후 결과와 AI 개선 의견이 화면에 표시됩니다.
-4. **HTML 내보내기** 버튼으로 standalone 리포트 파일을 생성할 수 있습니다.
+3. 완료 후 결과와 종합 개선 의견이 화면에 표시됩니다.
+
+   <img src="data/image/image_dashboard1.png" width="49%"> <img src="data/image/image_dashboard2.png" width="49%">
+4. 각 담보별로 확인하고 싶다면, 위쪽 탭에서 각 담보별 결과를 구체적으로 확인하세요. 
+5. **HTML 내보내기** 버튼으로 standalone 리포트 파일을 생성할 수 있습니다.
 
 ## 평가 지표 설명
 
@@ -109,9 +117,6 @@ python src/server.py
 - Claude API가 정답 답변과 RAG 답변을 비교하여 1~5점으로 채점합니다.
 
 ### Faithfulness
-- RAG 답변이 정답 기반 사실만을 담고 있는지 평가합니다.
+- RAG 답변이 약관에 기반해 있는지를 평가합니다. 
 - 점수가 낮을수록 hallucination이 많음을 의미합니다.
 
-## 라이선스
-
-MIT License
