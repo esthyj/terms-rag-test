@@ -63,7 +63,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 ### 4. 데이터 준비
 
 입력 파일 `data/input/all_policies_rag_answer.jsonl`은 질문·정답·메타데이터가 미리 채워진 상태로 제공됩니다.  
-**사용자가 직접 채워야 하는 열은 `rag_answer`와 `rag_reference` 두 가지뿐입니다.**
+**홍주대리님께서 직접 채워야 하는 열은 `rag_answer`와 `rag_reference` 두 가지뿐입니다.**
 
 | 필드 | 타입 | 작성 주체 | 설명 |
 |------|------|-----------|------|
@@ -74,8 +74,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 | `type` | str | 제공 | 질문 유형 (예: `보상 가능 여부 문의`) |
 | `la` | str | 제공 | 상품 코드 (예: `LA00377001`) |
 | `cla` | str | 제공 | 약관 코드 (예: `CLA05390`) |
-| `rag_answer` | str | **사용자 입력** | RAG 시스템이 생성한 답변 |
-| `rag_reference` | list[str] | **사용자 입력 (선택)** | RAG 시스템이 반환한 참조 조항 — 제공 시 Recall 지표 활성화 |
+| `rag_answer` | str | **대리님 입력** | RAG 시스템이 생성한 답변 |
+| `rag_reference` | list[str] | **대리님 입력 (선택)** | RAG 시스템이 반환한 참조 조항 — 제공 시 Recall 지표 활성화 |
 
 > `rag_answer` 열이 없으면 서버 시작 시 빈 문자열로 자동 추가됩니다.  
 > `rag_reference`는 선택 사항입니다. 없어도 Correctness · Faithfulness 평가는 정상 동작합니다.
