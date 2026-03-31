@@ -9,10 +9,10 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-RESULT_FILE  = Path(__file__).parent / "all_policies_eval_result.jsonl"
-INPUT_FILE   = Path(__file__).parent / "all_policies_rag_answer.jsonl"
-ADVICE_FILE  = Path(__file__).parent / "all_policies_advice.json"
-PREPROCESSED = Path(__file__).parent / "preprocessed_files"
+_PROJECT_ROOT = Path(__file__).parent.parent
+RESULT_FILE  = _PROJECT_ROOT / "data" / "output" / "all_policies_eval_result.jsonl"
+INPUT_FILE   = _PROJECT_ROOT / "data" / "input"  / "all_policies_rag_answer.jsonl"
+ADVICE_FILE  = _PROJECT_ROOT / "data" / "output" / "all_policies_advice.json"
 
 
 def load_jsonl(path: Path) -> list[dict]:
@@ -21,27 +21,17 @@ def load_jsonl(path: Path) -> list[dict]:
     return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
-def load_context_lengths() -> dict:
-    lengths = {}
-    for md in PREPROCESSED.glob("*.md"):
-        lengths[md.stem] = len(md.read_text(encoding="utf-8"))
-    return lengths
-
-
 def build_data() -> tuple[list[dict], list[dict]]:
     results   = load_jsonl(RESULT_FILE)
     inputs    = load_jsonl(INPUT_FILE)
     advice    = json.loads(ADVICE_FILE.read_text(encoding="utf-8")) if ADVICE_FILE.exists() else []
-    ctx_lens  = load_context_lengths()
 
     input_map = {r["qid"]: r for r in inputs}
     for row in results:
         src = input_map.get(row["qid"], {})
-        row["answer"]         = src.get("answer", "")
-        row["rag_answer"]     = src.get("rag_answer", "")
-        row["question"]       = src.get("question", row.get("question", ""))
-        la_cla = f"{row.get('la', '')}_{row.get('cla', '')}"
-        row["context_length"] = ctx_lens.get(la_cla, 0)
+        row["answer"]     = src.get("answer", "")
+        row["rag_answer"] = src.get("rag_answer", "")
+        row["question"]   = src.get("question", row.get("question", ""))
 
     return results, advice
 
@@ -86,7 +76,6 @@ def generate_html(results: list[dict], advice: list[dict], generated_at: str) ->
   }}
   .tab-btn .tab-la  {{ font-size: 0.78rem; font-weight: 700; }}
   .tab-btn .tab-cla {{ font-size: 0.72rem; font-weight: 400; opacity: 0.8; }}
-  .tab-btn .tab-ctx {{ font-size: 0.68rem; font-weight: 400; opacity: 0.6; }}
   .tab-btn:hover {{ background: #d0d8e8; color: #333; }}
   .tab-btn.active {{ background: white; color: #0f3460; border-bottom: 2px solid white; box-shadow: 0 -2px 6px rgba(0,0,0,.06); }}
 
@@ -266,8 +255,7 @@ function buildTabs(data) {{
       const btn = document.createElement('button');
       btn.className   = 'tab-btn';
       btn.dataset.key = key;
-      const ctxLen = (r.context_length || 0).toLocaleString() + ' 자';
-      btn.innerHTML   = `<span class="tab-la">${{r.la}}</span><span class="tab-cla">${{r.cla}}</span><span class="tab-ctx">${{ctxLen}}</span>`;
+      btn.innerHTML   = `<span class="tab-la">${{r.la}}</span><span class="tab-cla">${{r.cla}}</span>`;
       btn.onclick     = () => selectTab(key);
       bar.appendChild(btn);
     }}
@@ -421,7 +409,9 @@ def main():
 
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     timestamp    = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file  = Path(__file__).parent / f"rag_eval_report_{timestamp}.html"
+    output_dir   = _PROJECT_ROOT / "data" / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file  = output_dir / f"rag_eval_report_{timestamp}.html"
 
     html = generate_html(results, advice, generated_at)
     output_file.write_text(html, encoding="utf-8")

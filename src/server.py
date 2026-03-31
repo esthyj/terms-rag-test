@@ -29,13 +29,13 @@ import anthropic
 import httpx
 from pathlib import Path as _Path
 from dotenv import load_dotenv as _load_dotenv
-_load_dotenv(_Path(__file__).parent / ".env")
+_BASE_DIR = _Path(__file__).parent.parent  # project root
+_load_dotenv(_BASE_DIR / ".env")
 
-_BASE_DIR = _Path(__file__).parent
-INPUT_FILE      = str(_BASE_DIR / "all_policies_rag_answer.jsonl")
-OUTPUT_FILE     = str(_BASE_DIR / "all_policies_eval_result.jsonl")
-ADVICE_FILE     = str(_BASE_DIR / "all_policies_advice.json")
-PREPROCESSED_DIR = _BASE_DIR / "preprocessed_files"
+_DATA_DIR        = _BASE_DIR / "data"
+INPUT_FILE       = str(_DATA_DIR / "input"  / "all_policies_rag_answer.jsonl")
+OUTPUT_FILE      = str(_DATA_DIR / "output" / "all_policies_eval_result.jsonl")
+ADVICE_FILE      = str(_DATA_DIR / "output" / "all_policies_advice.json")
 
 
 def _check_startup_conditions():
@@ -99,16 +99,6 @@ def _check_startup_conditions():
 
 _check_startup_conditions()
 
-
-def _load_context_lengths() -> dict:
-    """LA_CLA → 약관 문서 글자 수 매핑"""
-    lengths = {}
-    for md_path in PREPROCESSED_DIR.glob("*.md"):
-        key = md_path.stem  # e.g. "LA00377001_CLA05390"
-        lengths[key] = len(md_path.read_text(encoding="utf-8"))
-    return lengths
-
-CONTEXT_LENGTHS = _load_context_lengths()
 
 app = FastAPI()
 
@@ -360,6 +350,7 @@ def _run_eval():
         _status.update({"progress": "결과 저장 중...", "pct": 93})
         correctness_map = {r["qid"]: r for r in correctness_results}
         rows = [{**rc, **correctness_map.get(rc["qid"], {})} for rc in recall_results]
+        _Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
             for row in rows:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
@@ -423,7 +414,9 @@ def export_html():
     results, advice   = build_data()
     generated_at      = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     timestamp         = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path       = Path(__file__).parent / f"rag_eval_report_{timestamp}.html"
+    output_dir        = _DATA_DIR / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path       = output_dir / f"rag_eval_report_{timestamp}.html"
     output_path.write_text(generate_html(results, advice, generated_at), encoding="utf-8")
     return JSONResponse(content={"status": "ok", "filename": output_path.name})
 
@@ -439,9 +432,7 @@ def get_results():
             src = input_map.get(row["qid"], {})
             row["answer"]         = src.get("answer", "")
             row["rag_answer"]     = src.get("rag_answer", "")
-            row["question"]       = src.get("question", row.get("question", ""))
-            la_cla_key = f"{row.get('la', '')}_{row.get('cla', '')}"
-            row["context_length"] = CONTEXT_LENGTHS.get(la_cla_key, 0)
+            row["question"]   = src.get("question", row.get("question", ""))
     return JSONResponse(content=results)
 
 
@@ -499,7 +490,6 @@ HTML = r"""<!DOCTYPE html>
   }
   .tab-btn .tab-la  { font-size: 0.78rem; font-weight: 700; }
   .tab-btn .tab-cla { font-size: 0.72rem; font-weight: 400; opacity: 0.8; }
-  .tab-btn .tab-ctx { font-size: 0.68rem; font-weight: 400; opacity: 0.6; }
   .tab-btn:hover { background: #d0d8e8; color: #333; }
   .tab-btn.active { background: white; color: #0f3460; border-bottom: 2px solid white; box-shadow: 0 -2px 6px rgba(0,0,0,.06); }
 
@@ -711,8 +701,7 @@ function buildTabs(data) {
       const btn = document.createElement('button');
       btn.className = 'tab-btn';
       btn.dataset.key = key;
-      const ctxLen = (r.context_length || 0).toLocaleString() + ' 자';
-      btn.innerHTML = `<span class="tab-la">${r.la}</span><span class="tab-cla">${r.cla}</span><span class="tab-ctx">${ctxLen}</span>`;
+      btn.innerHTML = `<span class="tab-la">${r.la}</span><span class="tab-cla">${r.cla}</span>`;
       btn.onclick = () => selectTab(key);
       bar.appendChild(btn);
     }

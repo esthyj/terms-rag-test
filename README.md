@@ -15,17 +15,19 @@ Claude API(LLM-as-a-judge)를 활용하여 **Reference Recall**, **Answer Correc
 
 ```
 terms-rag-test/
-├── server.py                       # FastAPI 웹 서버 (메인)
-├── criterion.py                    # 평가 지표 함수 (Recall / Correctness / Faithfulness)
-├── export_html.py                  # HTML 리포트 내보내기
-├── all_policies_rag_answer.jsonl   # 입력 데이터 (RAG 답변 포함)
-├── preprocessed_files/             # 약관 원문 마크다운 파일 (*.md)
-├── .env                            # API 키 설정 (직접 생성 필요)
-├── .env.example                    # .env 템플릿
+├── src/
+│   ├── server.py                       # FastAPI 웹 서버 (메인)
+│   ├── criterion.py                    # 평가 지표 함수 (Recall / Correctness / Faithfulness)
+│   └── export_html.py                  # HTML 리포트 내보내기
+├── data/
+│   └── input/
+│       └── all_policies_rag_answer.jsonl   # 입력 데이터
+├── .env                                # API 키 설정 (직접 생성 필요)
+├── .env.example                        # .env 템플릿
 └── requirements.txt
 ```
 
-> **생성 파일** (자동 생성, git 미추적)  
+> **생성 파일** (`data/output/` — 자동 생성, git 미추적)  
 > `all_policies_eval_result.jsonl` · `all_policies_advice.json` · `rag_eval_report_*.html`
 
 ## 시작하기
@@ -58,42 +60,33 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ### 4. 데이터 준비
 
-#### 4-1. 입력 파일 (`all_policies_rag_answer.jsonl`)
+입력 파일 `data/input/all_policies_rag_answer.jsonl`은 질문·정답·메타데이터가 미리 채워진 상태로 제공됩니다.  
+**사용자가 직접 채워야 하는 열은 `rag_answer`와 `rag_reference` 두 가지뿐입니다.**
 
-각 행은 아래 JSON 구조를 따릅니다.
-
-| 필드 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| `qid` | int | 필수 | 질문 고유 ID |
-| `question` | str | 필수 | 질문 텍스트 |
-| `answer` | str | 필수 | 정답(ground truth) 답변 |
-| `reference` | list[str] | 필수 | 정답 참조 조항 (예: `["제17조"]`) |
-| `type` | str | 필수 | 질문 유형 |
-| `la` | str | 필수 | 상품 코드 (예: `LA00377001`) |
-| `cla` | str | 필수 | 약관 코드 (예: `CLA05390`) |
-| `rag_answer` | str | 필수 | RAG 시스템이 생성한 답변 |
-| `rag_reference` | list[str] | **선택** | RAG 시스템이 반환한 참조 조항 — 제공 시 Recall 지표 활성화 |
+| 필드 | 타입 | 작성 주체 | 설명 |
+|------|------|-----------|------|
+| `qid` | int | 제공 | 질문 고유 ID |
+| `question` | str | 제공 | 질문 텍스트 |
+| `answer` | str | 제공 | 정답(ground truth) 답변 |
+| `reference` | list[str] | 제공 | 정답 참조 조항 (예: `["제17조"]`) |
+| `type` | str | 제공 | 질문 유형 |
+| `la` | str | 제공 | 상품 코드 (예: `LA00377001`) |
+| `cla` | str | 제공 | 약관 코드 (예: `CLA05390`) |
+| `rag_answer` | str | **사용자 입력** | 본인의 RAG 시스템이 생성한 답변 |
+| `rag_reference` | list[str] | **사용자 입력 (선택)** | RAG 시스템이 반환한 참조 조항 — 제공 시 Recall 지표 활성화 |
 
 > `rag_answer` 열이 없으면 서버 시작 시 빈 문자열로 자동 추가됩니다.  
-> `rag_reference` 열은 선택 사항입니다. 없어도 Correctness · Faithfulness 평가는 정상 동작합니다.
+> `rag_reference`는 선택 사항입니다. 없어도 Correctness · Faithfulness 평가는 정상 동작합니다.
 
 예시:
 ```jsonl
 {"qid": 1, "question": "...", "answer": "...", "reference": ["제15조"], "type": "보상 가능 여부 문의", "la": "LA00377001", "cla": "CLA05390", "rag_answer": "...", "rag_reference": ["제15조"]}
 ```
 
-#### 4-2. 약관 원문 파일 (`preprocessed_files/`)
-
-LA-CLA 조합별 약관 마크다운 파일을 `preprocessed_files/` 디렉토리에 넣습니다.  
-파일명 형식: `{LA코드}_{CLA코드}.md` (예: `LA00377001_CLA05390.md`)
-
-약관 원문은 대시보드의 **컨텍스트 길이** 표시에 사용됩니다.  
-파일이 없어도 평가 실행에는 영향이 없습니다.
-
 ### 5. 서버 실행
 
 ```bash
-python server.py
+python src/server.py
 ```
 
 브라우저에서 [http://localhost:8000](http://localhost:8000) 에 접속합니다.

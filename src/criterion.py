@@ -18,11 +18,11 @@ import anthropic
 import httpx
 from dotenv import load_dotenv
 
-env_path = Path(__file__).parent / ".env"
-load_dotenv(env_path)
+_PROJECT_ROOT = Path(__file__).parent.parent
+load_dotenv(_PROJECT_ROOT / ".env")
 
-INPUT_FILE = "all_policies_rag_answer.jsonl"
-OUTPUT_FILE = "all_policies_eval_result.jsonl"
+INPUT_FILE  = str(_PROJECT_ROOT / "data" / "input"  / "all_policies_rag_answer.jsonl")
+OUTPUT_FILE = str(_PROJECT_ROOT / "data" / "output" / "all_policies_eval_result.jsonl")
 MODEL = "claude-sonnet-4-6"
 
 
@@ -258,6 +258,7 @@ def save_results(recall_results: list[dict], correctness_results: list[dict]) ->
     for rc in recall_results:
         cc = correctness_map.get(rc["qid"], {})
         rows.append({**rc, **cc})
+    Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
