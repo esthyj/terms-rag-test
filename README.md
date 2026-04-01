@@ -62,7 +62,17 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ### 4. 데이터 준비
 
-입력 파일 `data/input/all_policies_rag_answer.jsonl`은 질문·정답·메타데이터가 미리 채워진 상태로 제공됩니다.  
+입력 파일 `data/input/all_policies_rag_answer.jsonl`은 **7개 약관 × 약관별 10개 질문 = 총 70개** 데이터로 구성되어 있으며, 아래 5가지 질문 유형을 고려하여 생성되었습니다.
+
+| 질문 유형 |
+|-----------|
+| 보상 가능 여부 문의 |
+| 약관 해석 및 지급 기준 문의 |
+| 청구 서류 문의 |
+| 계약 조건 및 인수 관련 문의 |
+| 계약 관리 및 절차 문의 |
+
+질문·정답·메타데이터가 미리 채워진 상태로 제공됩니다.  
 **홍주대리님께서 직접 채워야 하는 열은 `rag_answer`와 `rag_reference` 두 가지뿐입니다.**
 
 | 필드 | 타입 | 작성 주체 | 설명 |
@@ -105,6 +115,13 @@ python src/server.py
    <img src="data/image/image_dashboard1.png" width="49%"> <img src="data/image/image_dashboard2.png" width="49%">
 4. 각 담보별로 확인하고 싶다면, 위쪽 탭에서 각 담보별 결과를 구체적으로 확인하세요. 
 5. **HTML 내보내기** 버튼으로 standalone 리포트 파일을 생성할 수 있습니다.
+
+## 사용 모델
+
+| 용도 | 모델 |
+|------|------|
+| LLM-as-a-judge (평가) | `claude-sonnet-4-6` | (비용 문제로 Sonnet을 사용하나, 실제 평가시 Opus 사용 예정)
+| AI 개선 의견 생성 | `claude-sonnet-4-6` |
 
 ## 평가 지표 설명
 
